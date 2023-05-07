@@ -25,15 +25,6 @@ class ContactAdapter(private val contacts: List<Contact>) : RecyclerView.Adapter
         val phoneTextView: TextView = itemView.findViewById(R.id.contact_phone)
         val callButton: Button = itemView.findViewById(R.id.call_button)
 
-        fun bind(contact: Contact, context: Context) {
-            nameTextView.text = contact.name
-            phoneTextView.text = contact.phone
-            callButton.setOnClickListener {
-                val phoneNumber = contact.phone
-                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneNumber"))
-                context.startActivity(intent)
-            }
-        }
     }
 
     // onCreateViewHolder() создает новый объект ViewHolder всякий раз, когда RecyclerView нуждается в этом
