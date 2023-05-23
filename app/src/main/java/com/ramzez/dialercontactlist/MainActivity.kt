@@ -1,12 +1,19 @@
 package com.ramzez.dialercontactlist
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ramzez.dialercontactlist.adapters.ContactAdapter
 import com.ramzez.dialercontactlist.models.Contact
-
+import android.Manifest
 
 
 
@@ -14,32 +21,72 @@ import com.ramzez.dialercontactlist.models.Contact
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: ContactAdapter
+    private val contactList = mutableListOf(
+        Contact("Иванов Иван", "+7 (999) 123-45-67"),
+        Contact("Петров Петр", "+7 (999) 765-43-21"),
+        Contact("Сидоров Сидор", "+7 (999) 456-78-90")
+    )
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1.Получаем ссылку на RecyclerView из макета активности с помощью метода findViewById().
-        // Затем назначаем менеджер макета, в данном случае LinearLayoutManager,
-        // который отображает элементы списка вертикально. Для этого вызываем метод setLayoutManager() у RecyclerView,
-        // передавая ему новый объект LinearLayoutManager, созданный через конструктор:
-        val recyclerView = findViewById<RecyclerView>(R.id.contact_list)
+        recyclerView = findViewById(R.id.contact_list)
         recyclerView.layoutManager = LinearLayoutManager(this)
-
-        //2.Создаем список контактов и экземпляр адаптера. Для этого создаем объект List<Contact>,
-        // в котором содержатся объекты Contact, представляющие каждый контакт.
-        // Затем передаем этот список в конструктор ContactAdapter, который будет
-        // использоваться для заполнения RecyclerView.
-        val contacts = listOf(
-            Contact("Roman", "+77058140157"),
-            Contact("Jane Doe", "456-789-0123"),
-            Contact("Bob Smith", "789-012-3456")
-        )
-        val adapter = ContactAdapter(contacts)
-
-        //Назначаем адаптер RecyclerView. Для этого вызываем метод setAdapter() у RecyclerView,
-        // передавая ему экземпляр адаптера:
+        adapter = ContactAdapter(contactList)
         recyclerView.adapter = adapter
-
-
     }
+
+    fun makeCall(phoneNumber: String) {
+        val dialIntent = Intent(Intent.ACTION_CALL, Uri.parse(phoneNumber))
+        startActivity(dialIntent)
+    }
+
+    fun onCallButtonClicked(view: View) {
+        val position = recyclerView.getChildAdapterPosition(view)
+        val currentContact = contactList[position]
+        val phoneNumber = "tel:${currentContact.phone}"
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            makeCall(phoneNumber)
+        } else {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.CALL_PHONE),
+                CALL_PERMISSION_REQUEST_CODE
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CALL_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                val position = adapter.lastClickedPosition
+                val phoneNumber = "tel:${contactList[position].phone}"
+                makeCall(phoneNumber)
+            } else {
+                Toast.makeText(
+                    this,
+                    "Разрешение на звонок не было предоставлено",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    companion object {
+        private const val CALL_PERMISSION_REQUEST_CODE = 123
+    }
+
+
 }
